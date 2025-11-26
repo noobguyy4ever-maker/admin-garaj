@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>User Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>User Dashboard</h1>
+  <div>
+    <label>Username:</label>
+    <input id="username" value="user" disabled>
+    <label>Password:</label>
+    <input type="password" id="password" value="user123" disabled>
+    <button onclick="login()">Login</button>
+  </div>
+
+  <h2>Buat Tempahan</h2>
+  <form id="bookingForm" onsubmit="book(event)">
+    <label>Nama:</label><input id="studentName" required><br>
+    <label>No Matrik:</label><input id="studentID" required><br>
+    <label>Bulan Mula:</label><input id="startMonth" type="month" required><br>
+    <label>Tempoh (Bulan):</label>
+    <select id="duration" required>
+      <option value="1">1</option>
+      <option value="3">3</option>
+      <option value="6">6</option>
+      <option value="12">12</option>
+    </select><br>
+    <button type="submit">Tempah</button>
+  </form>
+
+  <h2>History Tempahan</h2>
+  <table id="historyTable">
+    <thead>
+      <tr>
+        <th>Nama</th>
+        <th>No Matrik</th>
+        <th>Bulan Mula</th>
+        <th>Bulan Tamat</th>
+        <th>Tempoh</th>
+        <th>Garaj</th>
+        <th>Status</th>
+        <th>Mesej</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const api = "https://garaj1.onrender.com";
+    const username = "user";
+
+    async function login(){
+      alert("Logged in as user");
+      loadHistory();
+    }
+
+    async function book(e){
+      e.preventDefault();
+      const studentName=document.getElementById("studentName").value;
+      const studentID=document.getElementById("studentID").value;
+      const startMonth=document.getElementById("startMonth").value;
+      const duration=document.getElementById("duration").value;
+
+      const res = await fetch(`${api}/book`,{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({username,studentName,studentID,startMonth,duration})
+      });
+      const data = await res.json();
+      alert(data.message);
+      loadHistory();
+    }
+
+    async function loadHistory(){
+      const res = await fetch(`${api}/bookings/history/${username}`);
+      const data = await res.json();
+      const tbody = document.querySelector("#historyTable tbody");
+      tbody.innerHTML="";
+      data.forEach(b=>{
+        const tr=document.createElement("tr");
+        tr.innerHTML=`
+          <td>${b.studentName}</td>
+          <td>${b.studentID}</td>
+          <td>${b.startMonth}</td>
+          <td>${b.endMonth}</td>
+          <td>${b.duration}</td>
+          <td>${b.garaj||''}</td>
+          <td>${b.status}</td>
+          <td>${b.message||''}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    loadHistory();
+  </script>
+</body>
+</html>
