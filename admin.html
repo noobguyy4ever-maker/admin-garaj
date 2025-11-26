@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard - Garaj</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>Admin Dashboard - Tempahan Garaj</header>
+<div class="container">
+
+  <!-- GARAGE VISUAL -->
+  <h3>Status Garaj</h3>
+  <div class="garaj-container" id="garajContainer"></div>
+
+  <!-- SEARCH / FILTER -->
+  <input type="text" id="searchInput" placeholder="Cari Nama / No Matrik">
+  <select id="statusFilter">
+    <option value="">Semua Status</option>
+    <option value="Pending">Pending</option>
+    <option value="Approved">Approved</option>
+    <option value="Rejected">Rejected</option>
+  </select>
+  <button onclick="fetchBookings()">Cari / Reset</button>
+  <button class="export" onclick="exportCSV()">Export CSV</button>
+
+  <!-- BOOKING TABLE -->
+  <h3>Senarai Tempahan</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Nama</th>
+        <th>No Matrik</th>
+        <th>Bulan Mula</th>
+        <th>Bulan Tamat</th>
+        <th>Tempoh</th>
+        <th>Garaj</th>
+        <th>Status</th>
+        <th>Mesej</th>
+        <th>Tindakan</th>
+      </tr>
+    </thead>
+    <tbody id="bookingTable"></tbody>
+  </table>
+
+</div>
+
+<script>
+const api = 'http://localhost:3001';
+
+// ===== GARAGE VISUAL =====
+async function fetchGarajStatus(){
+  const res = await fetch(`${api}/garaj-status`);
+  const data = await res.json();
+  const container = document.getElementById('garajContainer');
+  container.innerHTML = '';
+  data.forEach(g=>{
+    const div = document.createElement('div');
+    div.classList.add('garaj');
+    div.classList.add(g.occupied?'occupied':'available');
+    div.textContent = 'Garaj '+g.garaj;
+    container.appendChild(div);
+  });
+}
+
+// ===== FETCH BOOKINGS =====
+async function fetchBookings(){
+  const search = document.getElementById('searchInput').value;
+  const status = document.getElementById('statusFilter').value;
+  const res = await fetch(`${api}/bookings?search=${search}&status=${status}`);
+  const data = await res.json();
+  const tbody = document.getElementById('bookingTable');
+  tbody.innerHTML = '';
+  data.forEach(b=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${b.studentName}</td>
+      <td>${b.studentID}</td>
+      <td>${b.startMonth}</td>
+      <td>${b.endMonth}</td>
+      <td>${b.duration}</td>
+      <td>${b.garaj||''}</td>
+      <td>${b.status}</td>
+      <td>${b.message}</td>
+      <td>
+        ${b.status==='Pending'?`<button class="approve" onclick="assignGarage(${b.id})">Assign</button>`:''}
+        <button class="delete" onclick="deleteBooking(${b.id})">Delete</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ===== ASSIGN GARAGE =====
+async function assignGarage(id){
+  const garaj = prompt('Masukkan nombor Garaj (1-8) untuk tempahan ini:');
+  if(!garaj) return;
+  const res = await fetch(`${api}/bookings/${id}/garaj`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({garaj})
+  });
+  const data = await res.json();
+  alert(data.message);
+  fetchBookings();
+  fetchGarajStatus();
+}
+
+// ===== DELETE =====
+async function deleteBooking(id){
+  if(!confirm('Pasti nak padam tempahan ini?')) return;
+  await fetch(`${api}/bookings/${id}`,{method:'DELETE'});
+  fetchBookings();
+  fetchGarajStatus();
+}
+
+// ===== EXPORT CSV =====
+function exportCSV(){
+  window.open(`${api}/export/csv`,'_blank');
+}
+
+// ===== INIT =====
+fetchBookings();
+fetchGarajStatus();
+setInterval(fetchGarajStatus,30000); // update garaj every 30s
+</script>
+</body>
+</html>
