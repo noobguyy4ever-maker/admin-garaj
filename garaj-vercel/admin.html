@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Admin Dashboard</h1>
+  <div>
+    <label>Username:</label>
+    <input id="username" value="admin" disabled>
+    <label>Password:</label>
+    <input type="password" id="password" value="admin123" disabled>
+    <button onclick="login()">Login</button>
+  </div>
+
+  <h2>Tempahan Garaj</h2>
+  <table id="bookingTable">
+    <thead>
+      <tr>
+        <th>Nama</th>
+        <th>No Matrik</th>
+        <th>Bulan Mula</th>
+        <th>Bulan Tamat</th>
+        <th>Tempoh</th>
+        <th>Garaj</th>
+        <th>Status</th>
+        <th>Mesej</th>
+        <th>Tindakan</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const api = "https://garaj1.onrender.com";
+
+    async function login(){
+      // Hardcoded admin login
+      alert("Logged in as admin");
+      loadBookings();
+    }
+
+    async function loadBookings(){
+      const res = await fetch(`${api}/bookings`);
+      const data = await res.json();
+      const tbody = document.querySelector("#bookingTable tbody");
+      tbody.innerHTML="";
+      data.forEach(b=>{
+        const tr = document.createElement("tr");
+        tr.innerHTML=`
+          <td>${b.studentName}</td>
+          <td>${b.studentID}</td>
+          <td>${b.startMonth}</td>
+          <td>${b.endMonth}</td>
+          <td>${b.duration}</td>
+          <td>${b.garaj||''}</td>
+          <td>${b.status}</td>
+          <td>${b.message||''}</td>
+          <td>
+            <button onclick="assignGarage(${b.id})">Assign Garaj</button>
+            <button onclick="deleteBooking(${b.id})">Delete</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function assignGarage(id){
+      const garaj = prompt("Masukkan nombor garaj (1-8)");
+      if(!garaj) return;
+      const res = await fetch(`${api}/bookings/${id}/garaj`,{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({garaj})
+      });
+      const data = await res.json();
+      alert(data.message);
+      loadBookings();
+    }
+
+    async function deleteBooking(id){
+      if(!confirm("Padam tempahan ini?")) return;
+      await fetch(`${api}/bookings/${id}`,{method:"DELETE"});
+      loadBookings();
+    }
+
+    loadBookings();
+  </script>
+</body>
+</html>
